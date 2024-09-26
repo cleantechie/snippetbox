@@ -14,9 +14,9 @@ func home(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	TEMPLATE, ERROR := template.ParseFiles(
-		"./ui/html/base.html",
-		"./ui/html/partials/nav.html",
-		"./ui/html/pages/home.html",
+		"../../ui/html/base.html",
+		"../../ui/html/partials/nav.html",
+		"../../ui/html/pages/home.html",
 	)
 	if ERROR != nil {
 		log.Print(ERROR.Error())
