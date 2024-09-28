@@ -1,54 +1,67 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"log"
 	"net/http"
 	"os"
+
+	_ "github.com/go-sql-driver/mysql"
+	"snippetbox.harshasv.net/internal/datamodels"
 )
 
-type logger struct {
-	infoLogger *log.Logger
-	errLogger  *log.Logger
+type application struct {
+	infoLogger   *log.Logger
+	errLogger    *log.Logger
+	snippetModel *datamodels.SnippetModel
 }
 
 func main() {
 	host := flag.String("host", ":5000", "Http Port")
+	dsn := flag.String("dsn", "web:1234@/snippetbox?parseTime=true", "MySQL ")
 	flag.Parse()
 
-	mux := http.NewServeMux()
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.LUTC)
+	errLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.LUTC|log.Lshortfile)
+
+	database, error := openDatabase(*dsn)
+
+	if error != nil {
+		errLog.Fatal(error)
+	}
+	infoLog.Print("Connected to Database Succcessfully")
+	defer database.Close()
 
 	// creating an combined object of both these loggers so then can be injected
-	appLogger := &logger{
+	app := &application{
 		// Info log instance
-		infoLogger: log.New(os.Stdout, "INFO\t", log.Ldate|log.LUTC),
-
+		infoLogger: infoLog,
 		// Error log instance
-		errLogger: log.New(os.Stdout, "ERROR\t", log.Ldate|log.LUTC|log.Lshortfile),
+		errLogger: errLog,
+		// snippetModel points to database instance
+		snippetModel: &datamodels.SnippetModel{DB: database},
 	}
-
-	// Get the files from the directory
-	fileServer := http.FileServer(http.Dir("../../ui/static"))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
-
-	// Home Page Request
-	mux.HandleFunc("/", appLogger.home)
-
-	// POST REQ to create a snippet
-	mux.HandleFunc("/snippet/create", appLogger.snippetCreate)
-
-	// GET REQ to view a snippet with snippetId
-	mux.HandleFunc("/snippet/view", appLogger.snippetView)
-
-	appLogger.infoLogger.Printf("Starting server on port %s", *host)
-
 	// new server struct so even http error will use the err log instance
 	server := &http.Server{
 		Addr:     *host,
-		Handler:  mux,
-		ErrorLog: appLogger.errLogger,
+		Handler:  app.routes(),
+		ErrorLog: app.errLogger,
+	}
+	app.infoLogger.Printf("Starting server on port %s", *host)
+	serverStartErr := server.ListenAndServe()
+	app.errLogger.Fatal(serverStartErr)
+}
+
+func openDatabase(connectionString string) (*sql.DB, error) {
+	// the "mysql" refers to the driver that is blank identifier at the imports without directly referencing the driver's code
+	database, error := sql.Open("mysql", connectionString)
+	if error != nil {
+		return nil, error
 	}
 
-	serverStartErr := server.ListenAndServe()
-	appLogger.errLogger.Fatal(serverStartErr)
+	if error = database.Ping(); error != nil {
+		return nil, error
+	}
+	return database, nil
 }
