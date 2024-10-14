@@ -19,7 +19,7 @@ type application struct {
 
 func main() {
 	host := flag.String("host", ":5000", "Http Port")
-	dsn := flag.String("dsn", "web:1234@/snippetbox?parseTime=true", "MySQL ")
+	dsn := flag.String("dsn", "web:@/snippetbox?parseTime=true", "MySQL ")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.LUTC)

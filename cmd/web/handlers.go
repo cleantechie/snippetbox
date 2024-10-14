@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
+
+	"snippetbox.harshasv.net/internal/datamodels"
 )
 
 func (app *application) home(response http.ResponseWriter, request *http.Request) {
@@ -14,7 +17,7 @@ func (app *application) home(response http.ResponseWriter, request *http.Request
 	}
 	TEMPLATE, ERROR := template.ParseFiles(
 		"../../ui/html/base.html",
-		"../../ui/html/partials/nav.htl",
+		"../../ui/html/partials/nav.html",
 		"../../ui/html/pages/home.html",
 	)
 	if ERROR != nil {
@@ -50,9 +53,42 @@ func (app *application) snippetCreate(response http.ResponseWriter, request *htt
 func (app *application) snippetView(response http.ResponseWriter, request *http.Request) {
 	snippetId, ERROR := strconv.Atoi(request.URL.Query().Get("snippetId"))
 	if ERROR != nil || snippetId < 1 {
-		http.NotFound(response, request)
+		app.notFound(response)
 		return
 	}
+	snippet, err := app.snippetModel.GetSnippetById(snippetId)
+	if err != nil {
+		if errors.Is(err, datamodels.ErrNoRecord) {
+			app.notFound(response)
+		} else {
+			app.severError(response, err)
+		}
+		return
+	}
+	files := []string{
+		"../../ui/html/base.html",
+		"../../ui/html/partials/nav.html",
+		"../../ui/html/pages/view.html",
+	}
+	template, templateErr := template.ParseFiles(files...)
+	if templateErr != nil {
+		app.severError(response, templateErr)
+		return
+	}
+
+	templateErr = template.ExecuteTemplate(response, "base", snippet)
+	if templateErr != nil {
+		app.severError(response, templateErr)
+		return
+	}
+
 	app.infoLogger.Printf("Displaying a specfic snippet with Id %d....", snippetId)
-	response.Write([]byte("Display a new Snippet"))
+
+	fmt.Fprintf(response, "%+v", snippet)
+	// jsonResult, marshallingErr := json.Marshal(snippet)
+	// if marshallingErr != nil {
+	// 	app.clientError(response, http.StatusInternalServerError)
+	// }
+	// response.Header().Set("Content-Type", "application/json")
+	// response.Write(jsonResult)
 }
