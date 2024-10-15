@@ -21,6 +21,7 @@ func (app *application) home(response http.ResponseWriter, request *http.Request
 	}
 
 	app.renderTemplate(response, http.StatusOK, "home.html", &templateData{
+		CurrentYear:    app.renderCurrentYear(request),
 		LatestSnippets: latestSnippets,
 	})
 }
@@ -52,6 +53,7 @@ func (app *application) snippetView(response http.ResponseWriter, request *http.
 		app.notFound(response)
 		return
 	}
+	// panic("testing panic")
 	snippet, err := app.snippetModel.GetSnippetById(snippetId)
 	if err != nil {
 		if errors.Is(err, datamodels.ErrNoRecord) {
@@ -62,7 +64,8 @@ func (app *application) snippetView(response http.ResponseWriter, request *http.
 		return
 	}
 	app.renderTemplate(response, http.StatusOK, "view.html", &templateData{
-		Snippet: snippet,
+		CurrentYear: app.renderCurrentYear(request),
+		Snippet:     snippet,
 	})
 
 	app.infoLogger.Printf("Displaying a specfic snippet with Id %d....", snippet.ID)

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"time"
 )
 
 // Generic 500 InternalServerError
@@ -35,11 +37,20 @@ func (app *application) renderTemplate(response http.ResponseWriter, status int,
 		app.severError(response, err)
 		return
 	}
-	response.WriteHeader(status)
 
-	err := template.ExecuteTemplate(response, "base", data)
+	// fail first by catching runtime errors
+	temporaryBuffer := new(bytes.Buffer)
+	// write the template to buffer instead of straigth ahead to hhtp.ResponseWriter
+	err := template.ExecuteTemplate(temporaryBuffer, "base", data)
 	if err != nil {
 		app.severError(response, err)
 		return
 	}
+
+	response.WriteHeader(status)
+	temporaryBuffer.WriteTo(response)
+}
+
+func (app *application) renderCurrentYear(request *http.Request) int {
+	return time.Now().Year()
 }

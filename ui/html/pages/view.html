@@ -10,8 +10,9 @@
       </div>
       <pre><code>{{.Content}}</code></pre>
       <div class='metadata'>
-        <time>Created: {{.CreationTime}}</time>
-        <time>Expires: {{.ExpriyTime}}</time>
+        <!-- | is similar to linux piping -->
+        <time>Created: {{.CreationTime | humanDate}}</time>
+        <time>Expires: {{.ExpriyTime | humanDate}}</time>
       </div>
     </div>
   {{end}}
