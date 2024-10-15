@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -12,9 +13,10 @@ import (
 )
 
 type application struct {
-	infoLogger   *log.Logger
-	errLogger    *log.Logger
-	snippetModel *datamodels.SnippetModel
+	infoLogger    *log.Logger
+	errLogger     *log.Logger
+	snippetModel  *datamodels.SnippetModel
+	templateCache map[string]*template.Template
 }
 
 func main() {
@@ -33,6 +35,10 @@ func main() {
 	infoLog.Print("Connected to Database Succcessfully")
 	defer database.Close()
 
+	templateCache, error := templateCache()
+	if error != nil {
+		errLog.Fatal(error)
+	}
 	// creating an combined object of both these loggers so then can be injected
 	app := &application{
 		// Info log instance
@@ -41,6 +47,8 @@ func main() {
 		errLogger: errLog,
 		// snippetModel points to database instance
 		snippetModel: &datamodels.SnippetModel{DB: database},
+		// templateCache
+		templateCache: templateCache,
 	}
 	// new server struct so even http error will use the err log instance
 	server := &http.Server{

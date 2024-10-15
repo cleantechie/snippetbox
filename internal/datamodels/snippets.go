@@ -59,7 +59,7 @@ func (snippetModel *SnippetModel) GetSnippetById(snippetId int) (*Snippet, error
 }
 
 // Returns all the lastest snippets of size 10
-func (snippetModel *SnippetModel) getLatestSnippets() ([]*Snippet, error) {
+func (snippetModel *SnippetModel) GetLatestiSnippets() ([]*Snippet, error) {
 	query := `SELECT id, title, content, created, expires FROM snippets where expires > UTC_TIMESTAMP ORDER BY id DESC LIMIT 10`
 	rows, sqlError := snippetModel.DB.Query(query)
 	if sqlError != nil {

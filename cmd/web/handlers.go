@@ -3,34 +3,29 @@ package main
 import (
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
 
 	"snippetbox.harshasv.net/internal/datamodels"
 )
 
+// handler method to display latest snippets on home page
 func (app *application) home(response http.ResponseWriter, request *http.Request) {
 	if request.URL.Path != "/" {
 		http.NotFound(response, request)
 		return
 	}
-	TEMPLATE, ERROR := template.ParseFiles(
-		"../../ui/html/base.html",
-		"../../ui/html/partials/nav.html",
-		"../../ui/html/pages/home.html",
-	)
-	if ERROR != nil {
-		app.severError(response, ERROR)
-		http.Error(response, "Internal Server Error", http.StatusInternalServerError)
+	latestSnippets, err := app.snippetModel.GetLatestiSnippets()
+	if err != nil {
+		app.severError(response, err)
 	}
-	ERROR = TEMPLATE.ExecuteTemplate(response, "base", nil)
-	if ERROR != nil {
-		app.severError(response, ERROR)
-		http.Error(response, "Internal Server Error", http.StatusInternalServerError)
-	}
+
+	app.renderTemplate(response, http.StatusOK, "home.html", &templateData{
+		LatestSnippets: latestSnippets,
+	})
 }
 
+// handler method to create a new snippet
 func (app *application) snippetCreate(response http.ResponseWriter, request *http.Request) {
 	if request.Method != "POST" {
 		response.Header().Set("Allow", "POST")
@@ -50,6 +45,7 @@ func (app *application) snippetCreate(response http.ResponseWriter, request *htt
 	http.Redirect(response, request, fmt.Sprintf("/snippet/view?snippetId=%d", snippedtId), http.StatusSeeOther)
 }
 
+// handler method to handle displaying of specific snippet
 func (app *application) snippetView(response http.ResponseWriter, request *http.Request) {
 	snippetId, ERROR := strconv.Atoi(request.URL.Query().Get("snippetId"))
 	if ERROR != nil || snippetId < 1 {
@@ -65,30 +61,10 @@ func (app *application) snippetView(response http.ResponseWriter, request *http.
 		}
 		return
 	}
-	files := []string{
-		"../../ui/html/base.html",
-		"../../ui/html/partials/nav.html",
-		"../../ui/html/pages/view.html",
-	}
-	template, templateErr := template.ParseFiles(files...)
-	if templateErr != nil {
-		app.severError(response, templateErr)
-		return
-	}
+	app.renderTemplate(response, http.StatusOK, "view.html", &templateData{
+		Snippet: snippet,
+	})
 
-	templateErr = template.ExecuteTemplate(response, "base", snippet)
-	if templateErr != nil {
-		app.severError(response, templateErr)
-		return
-	}
-
-	app.infoLogger.Printf("Displaying a specfic snippet with Id %d....", snippetId)
-
+	app.infoLogger.Printf("Displaying a specfic snippet with Id %d....", snippet.ID)
 	fmt.Fprintf(response, "%+v", snippet)
-	// jsonResult, marshallingErr := json.Marshal(snippet)
-	// if marshallingErr != nil {
-	// 	app.clientError(response, http.StatusInternalServerError)
-	// }
-	// response.Header().Set("Content-Type", "application/json")
-	// response.Write(jsonResult)
 }

@@ -1,0 +1,19 @@
+{{define "title"}}Snippet #{{.Snippet.ID}}{{end}}
+
+{{define "main"}}
+  <!-- if .Snippet is not empty sets the . to the current Snippet -->
+  {{with .Snippet}}
+    <div class='snippet'>
+      <div class='metadata'>
+        <strong>{{.Title}}</strong>
+        <span>#{{.ID}}</span>
+      </div>
+      <pre><code>{{.Content}}</code></pre>
+      <div class='metadata'>
+        <time>Created: {{.CreationTime}}</time>
+        <time>Expires: {{.ExpriyTime}}</time>
+      </div>
+    </div>
+  {{end}}
+{{end}}
+

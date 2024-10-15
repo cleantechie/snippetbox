@@ -1,6 +1,25 @@
 {{define "title"}} Home {{end}}
 
 {{define "main"}}
-    <h2>Latest Snippets</h2>
-    <p>There is nothing to see yet!</p>
+  <h2>Latest Snippets</h2>
+  {{if .LatestSnippets}}
+  <table>
+    <tr> 
+      <th>Title</th>
+      <th>Created</th>
+      <th>ID</th>
+    </tr>
+    <!-- For each of snippets in the LatestSnippets -->
+    {{range .LatestSnippets}}
+    <tr> 
+      <td><a href = '/snippet/view?snippetId={{.ID}}'> {{.Title}}</a></td>
+      <td> {{.CreationTime}} </td>
+      <td> #{{.ID}}</td>
+    </tr>
+    {{end}}
+  </table>
+  {{else}}
+    <p> There are no snippets available at the moment</p>
+  {{end}}
 {{end}}
+
